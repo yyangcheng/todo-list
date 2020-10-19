@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-// 取得該用戶之所有代辦事項列表
+// 取得該用戶之所有待辦事項列表
 func (h *Handler) GetAllList(c *gin.Context) {
 	account := c.MustGet("account").(uint64)
 	list, err := h.db.GetUserAllList(account)
@@ -19,7 +19,7 @@ func (h *Handler) GetAllList(c *gin.Context) {
 	ResJSON(c, http.StatusOK, &Response{Data: list})
 }
 
-// 建立代辦事項列表
+// 建立待辦事項列表
 func (h *Handler) CreateList(c *gin.Context) {
 	account := c.MustGet("account").(uint64)
 	list := new(data.List)
@@ -49,7 +49,7 @@ func (h *Handler) CreateList(c *gin.Context) {
 	ResJSON(c, http.StatusOK, &Response{Data: info})
 }
 
-// 建立代辦事項列表之項目
+// 建立待辦事項列表之項目
 func (h *Handler) CreateItem(c *gin.Context) {
 	account := c.MustGet("account").(uint64)
 	listItem := new(data.ListItem)
@@ -60,7 +60,7 @@ func (h *Handler) CreateItem(c *gin.Context) {
 		return
 	}
 
-	if err := h.db.CheckTodoAuth(account, listItem.LId); err != nil {
+	if isAuth := h.checkTodoAuth(account, listItem.LId); !isAuth {
 		ResERROR(c, http.StatusUnauthorized, errors.New("Permission denied"))
 		return
 	}
@@ -75,7 +75,7 @@ func (h *Handler) CreateItem(c *gin.Context) {
 	ResJSON(c, http.StatusOK, &Response{Data: info})
 }
 
-// 更新代辦事項列表之項目
+// 更新待辦事項列表之項目
 func (h *Handler) UpdateItem(c *gin.Context) {
 	account := c.MustGet("account").(uint64)
 	listItem := new(data.ListItem)
@@ -86,7 +86,7 @@ func (h *Handler) UpdateItem(c *gin.Context) {
 		ResERROR(c, http.StatusUnprocessableEntity, err)
 		return
 	}
-	if err := h.db.CheckTodoAuth(account, listItem.LId); err != nil {
+	if isAuth := h.checkTodoAuth(account, listItem.LId); !isAuth {
 		ResERROR(c, http.StatusUnauthorized, errors.New("Permission denied"))
 		return
 	}
@@ -106,7 +106,7 @@ func (h *Handler) DeleteItem(c *gin.Context) {
 	lId, _ := strconv.ParseUint(c.Param("listId"), 10, 64)
 	iId, _ := strconv.ParseUint(c.Param("itemId"), 10, 64)
 
-	if err := h.db.CheckTodoAuth(account, lId); err != nil {
+	if isAuth := h.checkTodoAuth(account, lId); !isAuth {
 		ResERROR(c, http.StatusUnauthorized, errors.New("Permission denied"))
 		return
 	}
@@ -115,4 +115,15 @@ func (h *Handler) DeleteItem(c *gin.Context) {
 		return
 	}
 	ResJSON(c, http.StatusOK, &Response{})
+}
+
+func (h *Handler) checkTodoAuth(account uint64, lId uint64) bool {
+	list, err := h.db.GetAuthList(account)
+	if err != nil {
+		return false
+	}
+	if _, ok := list[lId]; !ok {
+		return false
+	}
+	return true
 }

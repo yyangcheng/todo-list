@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `list_item`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `list_item` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '代辦項目 id',
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '待辦項目 id',
   `l_id` int unsigned NOT NULL COMMENT 'list 表的 id',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '標題',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '內容',

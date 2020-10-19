@@ -2,6 +2,8 @@ package data
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -28,7 +30,42 @@ type ListItem struct {
 	UpdatedDt sql.NullString `json:"-"`
 }
 
-// 檢查用戶是否有此代辦事項板之權限
+var UserLists map[uint64]bool
+
+// 取得用戶之待辦事項板
+func (db *DB) GetAuthList(id uint64) (map[uint64]bool, error) {
+	key := fmt.Sprintf("id-%v-lists", id)
+	res, err := db.R.Get(key).Result()
+	if err == nil {
+		db.l.Debugln("get list from redis")
+		json.Unmarshal([]byte(res), &UserLists)
+		return UserLists, nil
+	}
+
+	rows, err := db.Ms.Query("SELECT l_id FROM list_user WHERE u_id = ?", id)
+
+	if err != nil {
+		db.l.Warn(err)
+		return nil, err
+	}
+	defer rows.Close()
+	UserLists := make(map[uint64]bool)
+	for rows.Next() {
+		var listId uint64
+		if err := rows.Scan(&listId); err != nil {
+			db.l.Warn(err)
+			return nil, err
+		}
+		UserLists[listId] = true
+	}
+	jsonStr, _ := json.Marshal(UserLists)
+	if _, err := db.R.Set(key, string(jsonStr), time.Minute*30*60).Result(); err != nil {
+		db.l.Warn(err)
+	}
+	return UserLists, nil
+}
+
+// 檢查用戶是否有此待辦事項板之權限
 func (db *DB) CheckTodoAuth(id uint64, listId uint64) error {
 	var lu ListUser
 	err := db.Ms.QueryRow("SELECT l_id, u_id FROM list_user WHERE l_id = ? and u_id = ?", listId, id).Scan(&lu.LId, &lu.UId)
@@ -69,7 +106,7 @@ func (db *DB) CreateList(l *List) error {
 	return nil
 }
 
-// 新增代辦事項成員
+// 新增待辦事項成員
 func (db *DB) CreateListUser(lu *ListUser) error {
 	_, err := db.Ms.Exec("INSERT INTO list_user (l_id, u_id) VALUES (?, ?)", lu.LId, lu.UId)
 	if err != nil {
@@ -79,7 +116,7 @@ func (db *DB) CreateListUser(lu *ListUser) error {
 	return nil
 }
 
-// 新增代辦列表的事項
+// 新增待辦列表的事項
 func (db *DB) CreateItem(l *ListItem) error {
 	res, err := db.Ms.Exec("INSERT INTO list_item (l_id, title, content) VALUES (?, ?, ?)",
 		l.LId, l.Title, l.Content)
@@ -95,7 +132,7 @@ func (db *DB) CreateItem(l *ListItem) error {
 	return nil
 }
 
-// 新增代辦列表的項目
+// 新增待辦列表的項目
 func (db *DB) UpdateItem(l *ListItem) error {
 	_, err := db.Ms.Exec("UPDATE list_item SET title = ?, content = ?, status = ? WHERE id = ?",
 		l.Title, l.Content, l.Status, l.Id)
@@ -106,7 +143,7 @@ func (db *DB) UpdateItem(l *ListItem) error {
 	return nil
 }
 
-// 刪除代辦列表的項目
+// 刪除待辦列表的項目
 func (db *DB) DeleteItem(id uint64) error {
 	_, err := db.Ms.Exec("DELETE FROM list_item WHERE id = ?", id)
 	if err != nil {
