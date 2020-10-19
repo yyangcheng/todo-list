@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/yyangc/todo-list/config"
@@ -9,7 +10,10 @@ import (
 	"github.com/yyangc/todo-list/libs"
 	"github.com/yyangc/todo-list/middlewares"
 	"io"
+	"net/http"
 	"os"
+	"os/signal"
+	"time"
 )
 
 func main() {
@@ -55,7 +59,30 @@ func main() {
 		r.DELETE("/todo/list/:listId/item/:itemId", h.DeleteItem)
 	}
 
-	r.Run(":" + config.Env.ListenPort)
+	srv := &http.Server{
+		Addr:         ":" + config.Env.ListenPort,
+		Handler:      r,
+		IdleTimeout:  120 * time.Second,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil {
+			l.Error(err.Error())
+		}
+	}()
+
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, os.Kill)
+
+	sig := <-sigChan
+	l.Info("Received terminate, graceful shutdown", sig)
+	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	if err := srv.Shutdown(tc); err != nil {
+		l.Warning("HTTP server Shutdown: %v", err.Error())
+	}
 }
 
 func initLogger() *logrus.Logger {
