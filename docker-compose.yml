@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - TZ=${WORKSPACE_TIMEZONE}
+    command: --init-file /data/application/init.sql
+    volumes:
+      - ${DATA_PATH_HOST}:/var/lib/mysql
+      - ./dbdump/init.sql:/data/application/init.sql
+    ports:
+      - "${MYSQL_PORT}:3306"
+    networks:
+      - "api.network"
+
+  redis:
+    image: redis:${REDIS_VERSION}
+    volumes:
+      - ${DATA_PATH_HOST}/redis:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    restart: always
+    networks:
+      - "api.network"
+
+networks:
+  api.network:
+    driver: ${NETWORKS_DRIVER}
