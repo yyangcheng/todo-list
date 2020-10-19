@@ -32,7 +32,7 @@ CREATE TABLE `users` (
   `updated_dt` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '最後更新時間',
   PRIMARY KEY (`id`),
   UNIQUE KEY `mail_UNIQUE` (`mail`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
