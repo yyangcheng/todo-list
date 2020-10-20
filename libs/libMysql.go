@@ -7,7 +7,7 @@ import (
 )
 
 func InitMysql() (*sql.DB, error) {
-	connString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true&multiStatements=true",
+	connString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=true&multiStatements=true",
 		config.Env.MySQL.User,
 		config.Env.MySQL.Password,
 		config.Env.MySQL.Host,

@@ -21,7 +21,6 @@ func (h *Handler) Login(c *gin.Context) {
 		ResERROR(c, http.StatusUnauthorized, errors.New("user not found"))
 		return
 	}
-
 	// 還未處理
 	if u.Password != user.Password {
 		ResERROR(c, http.StatusUnauthorized, errors.New("wrong password"))

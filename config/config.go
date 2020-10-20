@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	ListenHost string
 	ListenPort string
 	MySQL      MySQLConfig
 	Redis      RedisConfig
@@ -36,6 +37,7 @@ var Env *Config
 func init() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("./config")
-	viper.ReadInConfig()
+	viper.AddConfigPath("/app/config")
+	viper.SetConfigType("json")
 	viper.Unmarshal(&Env)
 }
