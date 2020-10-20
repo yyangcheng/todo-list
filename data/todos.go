@@ -33,15 +33,17 @@ type ListItem struct {
 var UserLists map[uint64]bool
 
 // 取得用戶之待辦事項板
-func (db *DB) GetAuthList(id uint64) (map[uint64]bool, error) {
+func (db *DB) GetAuthList(id uint64) (*map[uint64]bool, error) {
 	key := fmt.Sprintf("id-%v-lists", id)
+	// get auth from redis
 	res, err := db.R.Get(key).Result()
 	if err == nil {
-		db.l.Debugln("get list from redis")
 		json.Unmarshal([]byte(res), &UserLists)
-		return UserLists, nil
+		db.l.Debugln("get list from redis", UserLists)
+		return &UserLists, nil
 	}
 
+	// get auth from db
 	rows, err := db.Ms.Query("SELECT l_id FROM list_user WHERE u_id = ?", id)
 
 	if err != nil {
@@ -58,11 +60,21 @@ func (db *DB) GetAuthList(id uint64) (map[uint64]bool, error) {
 		}
 		UserLists[listId] = true
 	}
-	jsonStr, _ := json.Marshal(UserLists)
+	db.l.Debugln("get list from db", UserLists)
+	db.SaveAuthList(id, &UserLists)
+	return &UserLists, nil
+}
+
+// 將用戶之待辦事項板存至 redis
+func (db *DB) SaveAuthList(id uint64, userLists *map[uint64]bool) error {
+	key := fmt.Sprintf("id-%v-lists", id)
+	jsonStr, _ := json.Marshal(userLists)
 	if _, err := db.R.Set(key, string(jsonStr), time.Minute*30*60).Result(); err != nil {
 		db.l.Warn(err)
+		return err
 	}
-	return UserLists, nil
+	db.l.Info("SaveAuthList", userLists)
+	return nil
 }
 
 // 檢查用戶是否有此待辦事項板之權限
@@ -113,6 +125,10 @@ func (db *DB) CreateListUser(lu *ListUser) error {
 		db.l.Warn(err)
 		return err
 	}
+
+	list, _ := db.GetAuthList(lu.UId)
+	(*list)[lu.LId] = true
+	db.SaveAuthList(lu.UId, list)
 	return nil
 }
 
