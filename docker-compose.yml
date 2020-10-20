@@ -1,6 +1,31 @@
 version: "3.8"
 
 services:
+  api:
+    build: .
+    environment:
+      - TZ=${WORKSPACE_TIMEZONE}
+    ports:
+      - "8080:8080"
+    restart: "always"
+    networks:
+      network_tmsapi:
+        ipv4_address: 192.168.200.200
+    depends_on:
+      - mysql
+      - redis
+
+  redis:
+    image: redis
+    volumes:
+      - ${DATA_PATH_HOST}/redis:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    restart: always
+    networks:
+      network_tmsapi:
+        ipv4_address: 192.168.200.150
+
   mysql:
     image: mysql:${MYSQL_VERSION}
     environment:
@@ -9,25 +34,21 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - TZ=${WORKSPACE_TIMEZONE}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    restart: always
     command: --init-file /data/application/init.sql
     volumes:
       - ${DATA_PATH_HOST}:/var/lib/mysql
       - ./dbdump/init.sql:/data/application/init.sql
-    ports:
-      - "${MYSQL_PORT}:3306"
     networks:
-      - "api.network"
-
-  redis:
-    image: redis:${REDIS_VERSION}
-    volumes:
-      - ${DATA_PATH_HOST}/redis:/data
-    ports:
-      - "${REDIS_PORT}:6379"
-    restart: always
-    networks:
-      - "api.network"
+      network_tmsapi:
+        ipv4_address: 192.168.200.100
 
 networks:
-  api.network:
-    driver: ${NETWORKS_DRIVER}
+  network_tmsapi:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.200.0/24

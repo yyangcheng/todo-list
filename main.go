@@ -23,18 +23,18 @@ func main() {
 	// connect redis
 	rdb, err := libs.InitRedis()
 	if err != nil {
-		l.Fatalln(err)
+		l.Warn(err)
 	}
 	// connect mysql
 	mdb, err := libs.InitMysql()
 	if err != nil {
-		l.Fatalln(err)
+		l.Warn(err)
 	}
 
 	// initialize data
 	db, err := data.New(l, rdb, mdb)
 	if err != nil {
-		l.Fatalln(err)
+		l.Warn(err)
 	}
 	defer db.Close()
 
@@ -60,7 +60,7 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:         ":" + config.Env.ListenPort,
+		Addr:         config.Env.ListenHost + ":" + config.Env.ListenPort,
 		Handler:      r,
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  5 * time.Second,
