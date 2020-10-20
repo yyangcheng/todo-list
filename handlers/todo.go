@@ -122,7 +122,7 @@ func (h *Handler) checkTodoAuth(account uint64, lId uint64) bool {
 	if err != nil {
 		return false
 	}
-	if _, ok := list[lId]; !ok {
+	if _, ok := (*list)[lId]; !ok {
 		return false
 	}
 	return true
