@@ -39,5 +39,6 @@ func init() {
 	viper.AddConfigPath("./config")
 	viper.AddConfigPath("/app/config")
 	viper.SetConfigType("json")
+	viper.ReadInConfig()
 	viper.Unmarshal(&Env)
 }
