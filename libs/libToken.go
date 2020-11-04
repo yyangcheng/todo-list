@@ -17,9 +17,12 @@ type AccessDetails struct {
 }
 
 type TokenDetails struct {
-	AccessToken string
-	AccessUuid  string
-	AtExpires   int64
+	AccessToken  string
+	RefreshToken string
+	AccessUuid   string
+	RefreshUuid  string
+	AtExpires    int64
+	RtExpires    int64
 }
 
 func CreateToken(userId uint64) (*TokenDetails, error) {
@@ -28,7 +31,12 @@ func CreateToken(userId uint64) (*TokenDetails, error) {
 	accessUuid, _ := uuid.NewV4()
 	td.AccessUuid = accessUuid.String()
 
+	td.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
+	refreshUuid, _ := uuid.NewV4()
+	td.RefreshUuid = refreshUuid.String()
+
 	var err error
+	// creating access token
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -42,6 +50,18 @@ func CreateToken(userId uint64) (*TokenDetails, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// creating refresh token
+	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"refreshUuid": td.RefreshUuid,
+		"userId":      userId,
+		"exp":         td.RtExpires,
+	})
+	td.RefreshToken, err = rt.SignedString([]byte(config.Env.JWT.RefreshSecret))
+	if err != nil {
+		return nil, err
+	}
+
 	return td, nil
 }
 
