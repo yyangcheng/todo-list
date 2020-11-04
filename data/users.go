@@ -30,12 +30,19 @@ func (db *DB) GetUserInfo(m string) (*User, error) {
 
 func (db *DB) CreateRedisAuth(userId uint64, td *libs.TokenDetails) error {
 	at := time.Unix(td.AtExpires, 0)
+	rt := time.Unix(td.RtExpires, 0)
 	now := time.Now()
 
 	err := db.R.Set(string(td.AccessUuid[:]), strconv.Itoa(int(userId)), at.Sub(now)).Err()
 	if err != nil {
 		return err
 	}
+
+	err = db.R.Set(string(td.RefreshUuid[:]), strconv.Itoa(int(userId)), rt.Sub(now)).Err()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -51,8 +58,8 @@ func (db *DB) GetRedisAuth(ad *libs.AccessDetails) (uint64, error) {
 	return userID, nil
 }
 
-func (db *DB) DeleteRedisAuth(ad *libs.AccessDetails) error {
-	_, err := db.R.Del(ad.AccessUuid).Result()
+func (db *DB) DeleteRedis(str string) error {
+	_, err := db.R.Del(str).Result()
 	if err != nil {
 		return err
 	}

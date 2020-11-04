@@ -45,6 +45,7 @@ func main() {
 	mw := middlewares.New(l, db)
 	r := gin.Default()
 	r.POST("/login", h.Login)
+	r.POST("/refresh", h.Refresh)
 
 	r.Use(mw.Auth())
 	{
